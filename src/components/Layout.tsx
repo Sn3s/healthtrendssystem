@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { LogOut, Activity } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,10 +12,11 @@ interface LayoutProps {
 
 export function Layout({ children, title, role }: LayoutProps) {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentRole');
-    navigate('/');
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
   };
 
   return (

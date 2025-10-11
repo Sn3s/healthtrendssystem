@@ -1,67 +1,108 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/Modal';
-import { Patient, Visit } from '@/types/hospital';
 import { Users, Calendar, CheckCircle, Clock, Trash2, TrendingUp } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Admin() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [visits, setVisits] = useState<Visit[]>([]);
+  const navigate = useNavigate();
+  const { user, loading: authLoading, userRoles } = useAuth();
+  const [patients, setPatients] = useState<any[]>([]);
+  const [visits, setVisits] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!authLoading) {
+      if (!user || !userRoles.includes('admin')) {
+        navigate('/');
+      } else {
+        loadData();
+      }
+    }
+  }, [user, authLoading, userRoles, navigate]);
 
-  const loadData = () => {
-    const storedPatients = JSON.parse(localStorage.getItem('patients') || '[]');
-    const storedVisits = JSON.parse(localStorage.getItem('visits') || '[]');
-    setPatients(storedPatients);
-    setVisits(storedVisits);
+  const loadData = async () => {
+    try {
+      const [patientsRes, visitsRes] = await Promise.all([
+        supabase.from('patients').select('*'),
+        supabase.from('visits').select('*')
+      ]);
+
+      if (patientsRes.error) throw patientsRes.error;
+      if (visitsRes.error) throw visitsRes.error;
+
+      setPatients(patientsRes.data || []);
+      setVisits(visitsRes.data || []);
+    } catch (error: any) {
+      toast({
+        title: 'Error loading data',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReset = () => {
-    localStorage.clear();
-    setPatients([]);
-    setVisits([]);
-    toast({
-      title: "Data Reset Complete",
-      description: "All data has been cleared from local storage",
-    });
+  const handleReset = async () => {
+    try {
+      await supabase.from('departmental_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('visits').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('patients').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      setPatients([]);
+      setVisits([]);
+      setShowResetModal(false);
+      
+      toast({
+        title: "Data Reset Complete",
+        description: "All data has been cleared",
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const completedVisits = visits.filter(v => v.status === 'completed');
   const pendingVisits = visits.filter(v => v.status !== 'completed');
 
-  // Calculate top diagnoses
   const diagnosisCount = completedVisits.reduce((acc, visit) => {
-    if (visit.finalDiagnosis) {
-      acc[visit.finalDiagnosis] = (acc[visit.finalDiagnosis] || 0) + 1;
+    if (visit.final_diagnosis) {
+      acc[visit.final_diagnosis] = (acc[visit.final_diagnosis] || 0) + 1;
     }
     return acc;
   }, {} as Record<string, number>);
 
   const topDiagnoses = Object.entries(diagnosisCount)
-    .sort(([, a], [, b]) => b - a)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
     .slice(0, 10);
 
-  // Department statistics
   const departmentStats = visits.reduce((acc, visit) => {
     acc[visit.department] = (acc[visit.department] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const topDepartments = Object.entries(departmentStats)
-    .sort(([, a], [, b]) => b - a)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
     .slice(0, 5);
+
+  if (authLoading || loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
   return (
     <Layout title="Admin Dashboard" role="admin">
       <div className="space-y-6">
-        {/* Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-2">
@@ -96,7 +137,6 @@ export default function Admin() {
           </Card>
         </div>
 
-        {/* Top Diagnoses */}
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center">
             <TrendingUp className="h-5 w-5 mr-2 text-primary" />
@@ -113,7 +153,7 @@ export default function Admin() {
                     </span>
                     <span className="font-medium">{diagnosis}</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">{count} case{count > 1 ? 's' : ''}</span>
+                  <span className="text-sm text-muted-foreground">{count as number} case{(count as number) > 1 ? 's' : ''}</span>
                 </div>
               ))}
             </div>
@@ -122,7 +162,6 @@ export default function Admin() {
           )}
         </Card>
 
-        {/* Department Statistics */}
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4">
             Top Departments by Visit Volume
@@ -133,12 +172,12 @@ export default function Admin() {
               <div key={department} className="space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">{department}</span>
-                  <span className="text-muted-foreground">{count} visits</span>
+                  <span className="text-muted-foreground">{count as number} visits</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(count / visits.length) * 100}%` }}
+                    style={{ width: `${((count as number) / visits.length) * 100}%` }}
                   />
                 </div>
               </div>
@@ -146,7 +185,6 @@ export default function Admin() {
           </div>
         </Card>
 
-        {/* System Management */}
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4">System Management</h3>
           
@@ -154,7 +192,7 @@ export default function Admin() {
             <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
               <h4 className="font-semibold text-destructive mb-2">Danger Zone</h4>
               <p className="text-sm text-muted-foreground mb-4">
-                Reset all data in local storage. This action cannot be undone.
+                Reset all data in the database. This action cannot be undone.
               </p>
               <Button
                 variant="destructive"

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,94 +7,178 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Modal } from '@/components/Modal';
-import { Patient, Visit, DEPARTMENTS, DepartmentalLog } from '@/types/hospital';
+import { DEPARTMENTS } from '@/types/hospital';
 import { Stethoscope, FileText, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Doctor() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [visits, setVisits] = useState<Visit[]>([]);
+  const navigate = useNavigate();
+  const { user, loading: authLoading, userRoles } = useAuth();
+  const [patients, setPatients] = useState<any[]>([]);
+  const [visits, setVisits] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedDepartment, setSelectedDepartment] = useState<string>(DEPARTMENTS[0]);
-  const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
+  const [userDepartment, setUserDepartment] = useState<string | null>(null);
+  const [selectedVisit, setSelectedVisit] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'finding' | 'complete'>('finding');
   const [findings, setFindings] = useState('');
   const [finalDiagnosis, setFinalDiagnosis] = useState('');
-  const [providerName, setProviderName] = useState('Dr. Smith');
+  const [providerName, setProviderName] = useState('');
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!authLoading) {
+      if (!user || !userRoles.includes('doctor')) {
+        navigate('/');
+      } else {
+        loadUserDepartment();
+      }
+    }
+  }, [user, authLoading, userRoles, navigate]);
 
-  const loadData = () => {
-    const storedPatients = JSON.parse(localStorage.getItem('patients') || '[]');
-    const storedVisits = JSON.parse(localStorage.getItem('visits') || '[]');
-    setPatients(storedPatients);
-    setVisits(storedVisits);
+  useEffect(() => {
+    if (userDepartment) {
+      setSelectedDepartment(userDepartment);
+      loadData();
+    }
+  }, [userDepartment]);
+
+  const loadUserDepartment = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('department')
+        .eq('user_id', user?.id)
+        .eq('role', 'doctor')
+        .single();
+
+      if (error) throw error;
+      setUserDepartment(data.department);
+
+      // Get provider name from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user?.id)
+        .single();
+
+      if (profile?.full_name) {
+        setProviderName(profile.full_name);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
-  const filteredVisits = visits.filter(
-    v => v.department === selectedDepartment && v.status !== 'completed'
-  );
+  const loadData = async () => {
+    try {
+      const [patientsRes, visitsRes] = await Promise.all([
+        supabase.from('patients').select('*'),
+        supabase
+          .from('visits')
+          .select('*, departmental_logs(*)')
+          .eq('department', selectedDepartment)
+          .in('status', ['pending', 'in-progress'])
+          .order('created_at', { ascending: false })
+      ]);
 
-  const handleAddFinding = () => {
+      if (patientsRes.error) throw patientsRes.error;
+      if (visitsRes.error) throw visitsRes.error;
+
+      setPatients(patientsRes.data || []);
+      setVisits(visitsRes.data || []);
+    } catch (error: any) {
+      toast({
+        title: 'Error loading data',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddFinding = async () => {
     if (!selectedVisit) return;
 
-    const newLog: DepartmentalLog = {
-      id: `DL-${Date.now()}`,
-      department: selectedDepartment,
-      provider: providerName,
-      findings,
-      timestamp: new Date().toISOString(),
-    };
+    try {
+      const { error: logError } = await supabase.from('departmental_logs').insert([{
+        visit_id: selectedVisit.id,
+        department: selectedDepartment,
+        provider_name: providerName,
+        findings,
+        recorded_by: user?.id,
+      }]);
 
-    const updatedVisits = visits.map(v =>
-      v.id === selectedVisit.id
-        ? {
-            ...v,
-            status: 'in-progress' as const,
-            departmentalLogs: [...v.departmentalLogs, newLog],
-          }
-        : v
-    );
+      if (logError) throw logError;
 
-    localStorage.setItem('visits', JSON.stringify(updatedVisits));
-    setVisits(updatedVisits);
-    setSelectedVisit(null);
-    setFindings('');
-    setIsModalOpen(false);
+      const { error: visitError } = await supabase
+        .from('visits')
+        .update({ status: 'in-progress' })
+        .eq('id', selectedVisit.id);
 
-    toast({
-      title: "Finding Recorded",
-      description: "Departmental log has been added",
-    });
+      if (visitError) throw visitError;
+
+      await loadData();
+      setSelectedVisit(null);
+      setFindings('');
+      setIsModalOpen(false);
+
+      toast({
+        title: "Finding Recorded",
+        description: "Departmental log has been added",
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleCompleteVisit = () => {
+  const handleCompleteVisit = async () => {
     if (!selectedVisit) return;
 
-    const updatedVisits = visits.map(v =>
-      v.id === selectedVisit.id
-        ? {
-            ...v,
-            status: 'completed' as const,
-            finalDiagnosis,
-            completedAt: new Date().toISOString(),
-          }
-        : v
-    );
+    try {
+      const { error } = await supabase
+        .from('visits')
+        .update({
+          status: 'completed',
+          final_diagnosis: finalDiagnosis,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', selectedVisit.id);
 
-    localStorage.setItem('visits', JSON.stringify(updatedVisits));
-    setVisits(updatedVisits);
-    setSelectedVisit(null);
-    setFinalDiagnosis('');
-    setIsModalOpen(false);
+      if (error) throw error;
 
-    toast({
-      title: "Visit Completed",
-      description: "Patient visit has been finalized",
-    });
+      await loadData();
+      setSelectedVisit(null);
+      setFinalDiagnosis('');
+      setIsModalOpen(false);
+
+      toast({
+        title: "Visit Completed",
+        description: "Patient visit has been finalized",
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
+
+  if (authLoading || loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
   return (
     <Layout title="Doctor Portal" role="doctor">
@@ -105,7 +190,7 @@ export default function Doctor() {
               Department Console
             </h3>
             <div className="w-64">
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment} disabled>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -132,21 +217,21 @@ export default function Doctor() {
 
         <div className="grid grid-cols-1 gap-4">
           <h3 className="text-lg font-semibold">
-            Pending Appointments ({filteredVisits.length})
+            Pending Appointments ({visits.length})
           </h3>
           
-          {filteredVisits.map(visit => {
-            const patient = patients.find(p => p.id === visit.patientId);
+          {visits.map(visit => {
+            const patient = patients.find(p => p.id === visit.patient_id);
             return (
               <Card key={visit.id} className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h4 className="text-lg font-semibold">{patient?.name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      Patient ID: {visit.patientId} | Visit ID: {visit.id}
+                      Patient ID: {patient?.patient_number} | Visit ID: {visit.visit_number}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      DOB: {patient?.dateOfBirth} | Gender: {patient?.gender}
+                      DOB: {patient?.date_of_birth} | Gender: {patient?.gender}
                     </p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -160,20 +245,20 @@ export default function Doctor() {
 
                 <div className="mb-4">
                   <Label>Chief Complaint</Label>
-                  <p className="text-sm mt-1">{visit.chiefComplaint}</p>
+                  <p className="text-sm mt-1">{visit.chief_complaint}</p>
                 </div>
 
-                {visit.departmentalLogs.length > 0 && (
+                {visit.departmental_logs?.length > 0 && (
                   <div className="mb-4">
                     <Label>Previous Findings</Label>
                     <div className="space-y-2 mt-2">
-                      {visit.departmentalLogs.map(log => (
+                      {visit.departmental_logs.map((log: any) => (
                         <div key={log.id} className="p-3 bg-muted rounded-lg text-sm">
                           <p className="font-medium">{log.department}</p>
-                          <p className="text-muted-foreground">{log.provider}</p>
+                          <p className="text-muted-foreground">{log.provider_name}</p>
                           <p className="mt-1">{log.findings}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(log.timestamp).toLocaleString()}
+                            {new Date(log.created_at).toLocaleString()}
                           </p>
                         </div>
                       ))}
@@ -208,7 +293,7 @@ export default function Doctor() {
             );
           })}
 
-          {filteredVisits.length === 0 && (
+          {visits.length === 0 && (
             <Card className="p-8 text-center">
               <p className="text-muted-foreground">No pending appointments for this department</p>
             </Card>
@@ -216,7 +301,6 @@ export default function Doctor() {
         </div>
       </div>
 
-      {/* Add Finding Modal */}
       {modalType === 'finding' && (
         <Modal
           isOpen={isModalOpen}
@@ -247,7 +331,6 @@ export default function Doctor() {
         </Modal>
       )}
 
-      {/* Complete Visit Modal */}
       {modalType === 'complete' && (
         <Modal
           isOpen={isModalOpen}
