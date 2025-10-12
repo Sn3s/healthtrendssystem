@@ -12,6 +12,7 @@ import { Stethoscope, FileText, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { findingsSchema, diagnosisSchema } from '@/lib/validation';
 
 export default function Doctor() {
   const navigate = useNavigate();
@@ -108,6 +109,21 @@ export default function Doctor() {
     if (!selectedVisit) return;
 
     try {
+      // Validate input
+      const validationResult = findingsSchema.safeParse({
+        findings,
+        providerName
+      });
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          title: 'Validation Error',
+          description: firstError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { error: logError } = await supabase.from('departmental_logs').insert([{
         visit_id: selectedVisit.id,
         department: selectedDepartment,
@@ -147,6 +163,20 @@ export default function Doctor() {
     if (!selectedVisit) return;
 
     try {
+      // Validate input
+      const validationResult = diagnosisSchema.safeParse({
+        finalDiagnosis
+      });
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          title: 'Validation Error',
+          description: firstError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('visits')
         .update({

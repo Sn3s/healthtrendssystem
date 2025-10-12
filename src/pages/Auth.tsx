@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Activity } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { authSchema } from '@/lib/validation';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -25,6 +26,23 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      // Validate input
+      const validationData = isLogin 
+        ? { email: formData.email, password: formData.password }
+        : { email: formData.email, password: formData.password, fullName: formData.fullName };
+      
+      const validationResult = authSchema.safeParse(validationData);
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          title: 'Validation Error',
+          description: firstError.message,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
       if (isLogin) {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;

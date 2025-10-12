@@ -13,6 +13,7 @@ import { Search, UserPlus, ClipboardList, Calendar } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { patientSchema, visitSchema } from '@/lib/validation';
 
 export default function Encoder() {
   const navigate = useNavigate();
@@ -109,6 +110,18 @@ export default function Encoder() {
 
   const handleRegisterPatient = async () => {
     try {
+      // Validate input
+      const validationResult = patientSchema.safeParse(formData);
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          title: 'Validation Error',
+          description: firstError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const patientNumber = selectedPatient?.patient_number || (await supabase.rpc('generate_patient_number').single()).data;
 
       const patientData = {
@@ -159,6 +172,18 @@ export default function Encoder() {
     if (!selectedPatient) return;
     
     try {
+      // Validate input
+      const validationResult = visitSchema.safeParse(visitData);
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          title: 'Validation Error',
+          description: firstError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const visitNumber = (await supabase.rpc('generate_visit_number').single()).data;
 
       const { error } = await supabase.from('visits').insert([{
