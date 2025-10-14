@@ -205,6 +205,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_patient_id_by_number: {
+        Args: { _patient_number: string }
+        Returns: string
+      }
       get_user_department: {
         Args: { _user_id: string }
         Returns: string
@@ -214,6 +218,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      patient_has_visit_in_department: {
+        Args: { _department: string; _patient_id: string }
         Returns: boolean
       }
     }
