@@ -4,14 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserPlus, Edit, Trash2, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { DEPARTMENTS } from '@/types/hospital';
+
+interface Department {
+  id: string;
+  name: string;
+}
 
 interface UserProfile {
   id: string;
@@ -20,11 +24,13 @@ interface UserProfile {
   contact_number: string | null;
   patient_number: string | null;
   roles: string[];
-  department: string | null;
+  departmentId: string | null;
+  departmentName: string | null;
 }
 
 export function UserManagement() {
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -35,7 +41,7 @@ export function UserManagement() {
     contact_number: '',
     patient_number: '',
     roles: [] as string[],
-    department: '',
+    departmentId: '',
   });
 
   useEffect(() => {
@@ -44,6 +50,18 @@ export function UserManagement() {
 
   const loadUsers = async () => {
     try {
+      // Fetch all departments
+      const { data: depts, error: deptsError } = await supabase
+        .from('departments')
+        .select('*')
+        .order('name');
+
+      if (deptsError) throw deptsError;
+      setDepartments(depts || []);
+
+      // Create a map of department IDs to names
+      const deptMap = new Map(depts?.map(d => [d.id, d.name]) || []);
+
       // Fetch all profiles
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
@@ -60,10 +78,14 @@ export function UserManagement() {
             .select('role, department')
             .eq('user_id', profile.id);
 
+          const departmentId = roles?.find(r => r.role === 'doctor')?.department || null;
+          const departmentName = departmentId ? deptMap.get(departmentId) || null : null;
+
           return {
             ...profile,
             roles: roles?.map(r => r.role) || [],
-            department: roles?.find(r => r.role === 'doctor')?.department || null,
+            departmentId,
+            departmentName,
           };
         })
       );
@@ -113,7 +135,7 @@ export function UserManagement() {
         const newRoles = rolesToAdd.map(role => ({
           user_id: editingUser.id,
           role: role as 'admin' | 'doctor' | 'encoder' | 'patient',
-          department: role === 'doctor' ? formData.department : null,
+          department: role === 'doctor' ? (formData.departmentId || null) : null,
         }));
 
         const { error: addError } = await supabase
@@ -137,10 +159,10 @@ export function UserManagement() {
       }
 
       // Update doctor department if needed
-      if (formData.roles.includes('doctor') && formData.department) {
+      if (formData.roles.includes('doctor')) {
         const { error: deptError } = await supabase
           .from('user_roles')
-          .update({ department: formData.department })
+          .update({ department: formData.departmentId || null })
           .eq('user_id', editingUser.id)
           .eq('role', 'doctor');
 
@@ -198,7 +220,7 @@ export function UserManagement() {
       contact_number: user.contact_number || '',
       patient_number: user.patient_number || '',
       roles: user.roles,
-      department: user.department || '',
+      departmentId: user.departmentId || '',
     });
     setIsDialogOpen(true);
   };
@@ -265,7 +287,7 @@ export function UserManagement() {
                     )}
                   </div>
                 </TableCell>
-                <TableCell>{user.department || 'N/A'}</TableCell>
+                <TableCell>{user.departmentName || 'N/A'}</TableCell>
                 <TableCell>{user.patient_number || 'N/A'}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
@@ -343,14 +365,17 @@ export function UserManagement() {
             {formData.roles.includes('doctor') && (
               <div>
                 <Label>Department</Label>
-                <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
+                <Select 
+                  value={formData.departmentId} 
+                  onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map((dept) => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept}
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

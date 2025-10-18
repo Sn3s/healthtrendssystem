@@ -52,6 +52,24 @@ export type Database = {
           },
         ]
       }
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           address: string
@@ -143,7 +161,15 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_roles_department"
+            columns: ["department"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visits: {
         Row: {
@@ -221,7 +247,7 @@ export type Database = {
         Returns: boolean
       }
       patient_has_visit_in_department: {
-        Args: { _department: string; _patient_id: string }
+        Args: { _department_id: string; _patient_id: string }
         Returns: boolean
       }
     }
