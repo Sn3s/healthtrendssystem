@@ -42,7 +42,7 @@ export default function Doctor() {
   useEffect(() => {
     if (userDepartment) {
       setSelectedDepartment(userDepartment);
-      loadData();
+      loadData(userDepartment);
     }
   }, [userDepartment]);
 
@@ -89,14 +89,15 @@ export default function Doctor() {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (department?: string) => {
+    const deptToQuery = department || selectedDepartment;
     try {
       const [patientsRes, visitsRes] = await Promise.all([
         supabase.from('patients').select('*'),
         supabase
           .from('visits')
           .select('*, departmental_logs(*)')
-          .eq('department', selectedDepartment)
+          .eq('department', deptToQuery)
           .in('status', ['pending', 'in-progress'])
           .order('created_at', { ascending: false })
       ]);
