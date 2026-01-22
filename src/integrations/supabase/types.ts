@@ -10,251 +10,20 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
-      departmental_logs: {
-        Row: {
-          created_at: string
-          department: string
-          findings: string
-          id: string
-          provider_name: string
-          recorded_by: string | null
-          visit_id: string
-        }
-        Insert: {
-          created_at?: string
-          department: string
-          findings: string
-          id?: string
-          provider_name: string
-          recorded_by?: string | null
-          visit_id: string
-        }
-        Update: {
-          created_at?: string
-          department?: string
-          findings?: string
-          id?: string
-          provider_name?: string
-          recorded_by?: string | null
-          visit_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "departmental_logs_visit_id_fkey"
-            columns: ["visit_id"]
-            isOneToOne: false
-            referencedRelation: "visits"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      departments: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
-      patients: {
-        Row: {
-          address: string
-          contact_number: string
-          created_at: string
-          created_by: string | null
-          date_of_birth: string
-          gender: Database["public"]["Enums"]["gender"]
-          id: string
-          name: string
-          patient_number: string
-          updated_at: string
-        }
-        Insert: {
-          address: string
-          contact_number: string
-          created_at?: string
-          created_by?: string | null
-          date_of_birth: string
-          gender: Database["public"]["Enums"]["gender"]
-          id?: string
-          name: string
-          patient_number: string
-          updated_at?: string
-        }
-        Update: {
-          address?: string
-          contact_number?: string
-          created_at?: string
-          created_by?: string | null
-          date_of_birth?: string
-          gender?: Database["public"]["Enums"]["gender"]
-          id?: string
-          name?: string
-          patient_number?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          contact_number: string | null
-          created_at: string
-          email: string
-          full_name: string | null
-          id: string
-          patient_number: string | null
-          updated_at: string
-        }
-        Insert: {
-          contact_number?: string | null
-          created_at?: string
-          email: string
-          full_name?: string | null
-          id: string
-          patient_number?: string | null
-          updated_at?: string
-        }
-        Update: {
-          contact_number?: string | null
-          created_at?: string
-          email?: string
-          full_name?: string | null
-          id?: string
-          patient_number?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          department: string | null
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          department?: string | null
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          department?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_user_roles_department"
-            columns: ["department"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      visits: {
-        Row: {
-          chief_complaint: string
-          completed_at: string | null
-          created_at: string
-          created_by: string | null
-          department: string
-          final_diagnosis: string | null
-          id: string
-          patient_id: string
-          status: Database["public"]["Enums"]["visit_status"]
-          visit_number: string
-        }
-        Insert: {
-          chief_complaint: string
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          department: string
-          final_diagnosis?: string | null
-          id?: string
-          patient_id: string
-          status?: Database["public"]["Enums"]["visit_status"]
-          visit_number: string
-        }
-        Update: {
-          chief_complaint?: string
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          department?: string
-          final_diagnosis?: string | null
-          id?: string
-          patient_id?: string
-          status?: Database["public"]["Enums"]["visit_status"]
-          visit_number?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "visits_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      generate_patient_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_visit_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_patient_id_by_number: {
-        Args: { _patient_number: string }
-        Returns: string
-      }
-      get_user_department: {
-        Args: { _user_id: string }
-        Returns: string
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      patient_has_visit_in_department: {
-        Args: { _department_id: string; _patient_id: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "encoder" | "doctor" | "patient" | "admin"
-      gender: "male" | "female" | "other"
-      visit_status: "pending" | "in-progress" | "completed"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -381,10 +150,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["encoder", "doctor", "patient", "admin"],
-      gender: ["male", "female", "other"],
-      visit_status: ["pending", "in-progress", "completed"],
-    },
+    Enums: {},
   },
 } as const
