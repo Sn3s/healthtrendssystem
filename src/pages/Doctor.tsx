@@ -48,15 +48,27 @@ export default function Doctor() {
 
   const loadUserDepartment = async () => {
     try {
-      const { data, error } = await supabase
+      // Get the doctor's department UUID from user_roles
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('department')
         .eq('user_id', user?.id)
         .eq('role', 'doctor')
         .single();
 
-      if (error) throw error;
-      setUserDepartment(data.department);
+      if (roleError) throw roleError;
+
+      // Get the department name from the departments table
+      if (roleData?.department) {
+        const { data: deptData, error: deptError } = await supabase
+          .from('departments')
+          .select('name')
+          .eq('id', roleData.department)
+          .single();
+
+        if (deptError) throw deptError;
+        setUserDepartment(deptData.name);
+      }
 
       // Get provider name from profile
       const { data: profile } = await supabase

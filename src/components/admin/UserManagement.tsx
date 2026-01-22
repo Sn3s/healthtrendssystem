@@ -19,10 +19,12 @@ interface Department {
 
 interface UserProfile {
   id: string;
-  email: string;
+  email?: string;
   full_name: string | null;
   contact_number: string | null;
   patient_number: string | null;
+  created_at: string | null;
+  updated_at: string | null;
   roles: string[];
   departmentId: string | null;
   departmentName: string | null;
