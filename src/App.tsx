@@ -9,6 +9,10 @@ import Encoder from "./pages/Encoder";
 import Doctor from "./pages/Doctor";
 import Patient from "./pages/Patient";
 import Admin from "./pages/Admin";
+import Xray from "./pages/Xray";
+import HealthTrendsDashboard from "./pages/healthtrends/Dashboard";
+import PEEncoding from "./pages/healthtrends/PEEncoding";
+import PEForm from "./pages/healthtrends/PEForm";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +31,10 @@ const App = () => {
             <Route path="/doctor" element={<Doctor />} />
             <Route path="/patient" element={<Patient />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/xray" element={<Xray />} />
+            <Route path="/healthtrends" element={<HealthTrendsDashboard />} />
+            <Route path="/healthtrends/pe-encoding" element={<PEEncoding />} />
+            <Route path="/healthtrends/pe/:examCode" element={<PEForm />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

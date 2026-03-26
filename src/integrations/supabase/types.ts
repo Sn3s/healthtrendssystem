@@ -52,6 +52,133 @@ export type Database = {
           },
         ]
       }
+      ape_companies: {
+        Row: { company_code: string; created_at: string | null; name: string }
+        Insert: { company_code: string; name: string; created_at?: string | null }
+        Update: { company_code?: string; name?: string; created_at?: string | null }
+        Relationships: []
+      }
+      ape_employees: {
+        Row: {
+          id: string
+          company_code: string
+          employee_number: number
+          exam_code: string
+          exam_date: string
+          name: string
+          address: string
+          contact_number: string
+          age: number
+          gender: string
+          created_by: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_code: string
+          employee_number: number
+          exam_code: string
+          exam_date: string
+          name: string
+          address?: string
+          contact_number?: string
+          age: number
+          gender: string
+          created_by?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_code?: string
+          employee_number?: number
+          exam_code?: string
+          exam_date?: string
+          name?: string
+          address?: string
+          contact_number?: string
+          age?: number
+          gender?: string
+          created_by?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ape_employees_company_code_fkey"
+            columns: ["company_code"]
+            isOneToOne: false
+            referencedRelation: "ape_companies"
+            referencedColumns: ["company_code"]
+          },
+        ]
+      }
+      pe_records: {
+        Row: {
+          id: string
+          ape_employee_id: string
+          childhood_diseases: string | null
+          past_illnesses_injuries: string | null
+          operations: string | null
+          smoker: string | null
+          alcohol: string | null
+          exercise: string | null
+          family_heart_disease: boolean | null
+          family_hypertension: boolean | null
+          family_diabetes: boolean | null
+          family_asthma: boolean | null
+          family_allergy: boolean | null
+          family_cancer: boolean | null
+          family_others: string | null
+          updated_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          ape_employee_id: string
+          childhood_diseases?: string | null
+          past_illnesses_injuries?: string | null
+          operations?: string | null
+          smoker?: string | null
+          alcohol?: string | null
+          exercise?: string | null
+          family_heart_disease?: boolean | null
+          family_hypertension?: boolean | null
+          family_diabetes?: boolean | null
+          family_asthma?: boolean | null
+          family_allergy?: boolean | null
+          family_cancer?: boolean | null
+          family_others?: string | null
+          updated_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          ape_employee_id?: string
+          childhood_diseases?: string | null
+          past_illnesses_injuries?: string | null
+          operations?: string | null
+          smoker?: string | null
+          alcohol?: string | null
+          exercise?: string | null
+          family_heart_disease?: boolean | null
+          family_hypertension?: boolean | null
+          family_diabetes?: boolean | null
+          family_asthma?: boolean | null
+          family_allergy?: boolean | null
+          family_cancer?: boolean | null
+          family_others?: string | null
+          updated_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pe_records_ape_employee_id_fkey"
+            columns: ["ape_employee_id"]
+            isOneToOne: true
+            referencedRelation: "ape_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string | null
@@ -168,6 +295,93 @@ export type Database = {
           },
         ]
       }
+      xray_reports: {
+        Row: {
+          id: string
+          control_number: string
+          report_date: string
+          company_affiliation: string | null
+          requesting_physician: string
+          radiologic_technologist: string
+          radiologist: string
+          patient_name: string
+          date_of_birth: string
+          age: number | null
+          sex: string
+          first_day_last_menstruation: string | null
+          indication_history: string
+          diagnostic_imaging_request: string
+          findings: string
+          impression: string
+          visit_id: string | null
+          patient_id: string | null
+          recorded_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          control_number?: string
+          report_date: string
+          company_affiliation?: string | null
+          requesting_physician: string
+          radiologic_technologist: string
+          radiologist: string
+          patient_name: string
+          date_of_birth: string
+          age?: number | null
+          sex: string
+          first_day_last_menstruation?: string | null
+          indication_history: string
+          diagnostic_imaging_request: string
+          findings: string
+          impression: string
+          visit_id?: string | null
+          patient_id?: string | null
+          recorded_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          control_number?: string
+          report_date?: string
+          company_affiliation?: string | null
+          requesting_physician?: string
+          radiologic_technologist?: string
+          radiologist?: string
+          patient_name?: string
+          date_of_birth?: string
+          age?: number | null
+          sex?: string
+          first_day_last_menstruation?: string | null
+          indication_history?: string
+          diagnostic_imaging_request?: string
+          findings?: string
+          impression?: string
+          visit_id?: string | null
+          patient_id?: string | null
+          recorded_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "xray_reports_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "xray_reports_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visits: {
         Row: {
           chief_complaint: string
@@ -225,6 +439,7 @@ export type Database = {
     Functions: {
       generate_patient_number: { Args: never; Returns: string }
       generate_visit_number: { Args: never; Returns: string }
+      generate_xray_control_number: { Args: never; Returns: string }
       get_user_department: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -232,6 +447,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      search_ape_employees: {
+        Args: { p_query: string }
+        Returns: {
+          id: string
+          exam_code: string
+          name: string
+          exam_date: string
+          company_code: string
+          match_rank: number
+          match_label: string
+        }[]
       }
     }
     Enums: {

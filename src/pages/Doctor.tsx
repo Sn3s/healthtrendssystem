@@ -8,11 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Modal } from '@/components/Modal';
 import { DEPARTMENTS } from '@/types/hospital';
-import { Stethoscope, FileText, CheckCircle } from 'lucide-react';
+import { Stethoscope, FileText, CheckCircle, Scan } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { findingsSchema, diagnosisSchema } from '@/lib/validation';
+import { Link } from 'react-router-dom';
 
 export default function Doctor() {
   const navigate = useNavigate();
@@ -309,7 +310,22 @@ export default function Doctor() {
                   </div>
                 )}
 
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
+                  {visit.department === 'Imaging & X-Ray Facilities' && (
+                    <Button asChild variant="outline">
+                      <Link
+                        to="/xray"
+                        state={{
+                          visit,
+                          patient,
+                          prefill: patient ? { name: patient.name, date_of_birth: patient.date_of_birth, gender: patient.gender } : undefined,
+                        }}
+                      >
+                        <Scan className="h-4 w-4 mr-2" />
+                        X-Ray Report
+                      </Link>
+                    </Button>
+                  )}
                   <Button
                     onClick={() => {
                       setSelectedVisit(visit);

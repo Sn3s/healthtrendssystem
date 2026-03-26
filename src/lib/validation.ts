@@ -26,6 +26,37 @@ export const diagnosisSchema = z.object({
   finalDiagnosis: z.string().trim().min(1, "Final diagnosis is required").max(5000, "Final diagnosis must be less than 5000 characters")
 });
 
+// X-Ray Report validation
+export const xrayReportSchema = z.object({
+  // Administrative & Identification
+  reportDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+  companyAffiliation: z.string().trim().max(200).optional().or(z.literal("")),
+  requestingPhysician: z.string().trim().min(1, "Requesting physician is required").max(100),
+  radiologicTechnologist: z.string().trim().min(1, "Radiologic technologist is required").max(100),
+  radiologist: z.string().trim().min(1, "Radiologist is required").max(100),
+  // Patient Demographics
+  patientName: z.string().trim().min(1, "Patient name is required").max(200),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+  age: z.coerce.number().int().min(0).max(150).optional().nullable(),
+  sex: z.enum(["male", "female"], { errorMap: () => ({ message: "Please select sex" }) }),
+  firstDayLastMenstruation: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional().or(z.literal("")),
+  // Clinical Context & Results
+  indicationHistory: z.string().trim().min(1, "Indication/History is required").max(2000),
+  diagnosticImagingRequest: z.string().trim().min(1, "Diagnostic imaging request is required").max(500),
+  findings: z.string().trim().min(1, "Findings are required").max(10000),
+  impression: z.string().trim().min(1, "Impression is required").max(2000),
+}).refine(
+  (data) => {
+    if (data.sex === "female") {
+      return !!data.firstDayLastMenstruation && /^\d{4}-\d{2}-\d{2}$/.test(data.firstDayLastMenstruation);
+    }
+    return true;
+  },
+  { message: "1st day of last menstruation is required for female patients (safety screening for radiation)", path: ["firstDayLastMenstruation"] }
+);
+
+export type XrayReportFormData = z.infer<typeof xrayReportSchema>;
+
 // Authentication validation
 export const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email must be less than 255 characters"),

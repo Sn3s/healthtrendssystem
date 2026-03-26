@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Modal } from '@/components/Modal';
 import { DEPARTMENTS } from '@/types/hospital';
-import { Search, UserPlus, ClipboardList, Calendar } from 'lucide-react';
+import { Search, UserPlus, ClipboardList, Calendar, Stethoscope } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -220,6 +220,22 @@ export default function Encoder() {
 
   return (
     <Layout title="Encoder Portal" role="encoder">
+      <Card className="p-4 mb-6 border-primary/20 bg-primary/5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">HealthTrends Mobile Clinic — APE</p>
+            <p className="text-xs text-muted-foreground">
+              Bulk employee registration and physical exam encoding for annual physicals.
+            </p>
+          </div>
+          <Button asChild size="sm">
+            <Link to="/healthtrends">
+              <Stethoscope className="h-4 w-4 mr-2" />
+              Open APE workspace
+            </Link>
+          </Button>
+        </div>
+      </Card>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center">
