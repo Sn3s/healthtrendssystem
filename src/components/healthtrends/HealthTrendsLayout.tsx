@@ -51,9 +51,9 @@ export function HealthTrendsLayout({ children }: { children: ReactNode }) {
         </nav>
         <div className="p-2 border-t border-border space-y-1">
           <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
-            <Link to="/">
+            <Link to="/?tab=registry">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Main app
+              APE workspace
             </Link>
           </Button>
           <Button

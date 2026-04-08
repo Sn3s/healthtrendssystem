@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function Patient() {
+export default function Patient({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const { user, loading: authLoading, userRoles } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -19,8 +19,9 @@ export default function Patient() {
   const [patientVisits, setPatientVisits] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!authLoading && (!user || !userRoles.includes('patient'))) {
-      navigate('/');
+    if (!authLoading) {
+      if (!user) navigate('/auth');
+      else if (!userRoles.includes('patient')) navigate('/');
     }
   }, [user, authLoading, userRoles, navigate]);
 
@@ -71,11 +72,15 @@ export default function Patient() {
   };
 
   if (authLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className={`flex items-center justify-center ${embedded ? 'min-h-[240px]' : 'min-h-screen'}`}>
+        Loading...
+      </div>
+    );
   }
 
   return (
-    <Layout title="Patient Portal" role="patient">
+    <Layout title="Patient Portal" role="patient" embedded={embedded}>
       <div className="space-y-6">
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center">

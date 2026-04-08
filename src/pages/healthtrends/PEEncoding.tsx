@@ -38,19 +38,31 @@ function useDebouncedCallback(fn: (arg: string) => void, ms: number) {
   );
 }
 
-export default function PEEncoding() {
+export default function PEEncoding({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const { user, loading: authLoading, userRoles } = useAuth();
   const [q, setQ] = useState('');
   const [results, setResults] = useState<SearchRow[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchMode, setSearchMode] = useState<'fuzzy' | 'legacy'>('fuzzy');
+  const [companies, setCompanies] = useState<{ company_code: string; name: string }[]>([]);
 
   const canAccess = userRoles.includes('encoder') || userRoles.includes('admin');
 
   useEffect(() => {
-    if (!authLoading && (!user || !canAccess)) navigate('/');
-  }, [user, authLoading, canAccess, navigate]);
+    if (!authLoading) {
+      if (!user) navigate('/auth');
+      else if (!embedded && !canAccess) navigate('/');
+    }
+  }, [user, authLoading, canAccess, navigate, embedded]);
+
+  useEffect(() => {
+    if (!user || !canAccess) return;
+    (async () => {
+      const { data, error } = await supabase.from('ape_companies').select('company_code, name').order('company_code');
+      if (!error && data) setCompanies(data);
+    })();
+  }, [user, canAccess]);
 
   const runSearch = useCallback(
     async (termRaw: string) => {
@@ -112,11 +124,14 @@ export default function PEEncoding() {
   };
 
   if (authLoading || !user || !canAccess) {
-    return <div className="flex min-h-screen items-center justify-center">Loading…</div>;
+    return (
+      <div className={`flex items-center justify-center ${embedded ? 'min-h-[240px]' : 'min-h-screen'}`}>Loading…</div>
+    );
   }
 
-  return (
-    <HealthTrendsLayout>
+  const companyLabel = (code: string) => companies.find((c) => c.company_code === code)?.name?.trim() ?? '';
+
+  const body = (
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">PE Encoding</h2>
@@ -162,17 +177,24 @@ export default function PEEncoding() {
               <ul className="rounded-md border divide-y text-sm">
                 {results.map((r) => {
                   const label = r.match_label ? LABEL_DISPLAY[r.match_label] : null;
+                  const coName = companyLabel(r.company_code);
                   return (
                     <li key={r.id}>
                       <button
                         type="button"
-                        className="w-full text-left px-3 py-2 hover:bg-muted/80 flex flex-wrap items-center justify-between gap-2"
-                        onClick={() => navigate(`/healthtrends/pe/${encodeURIComponent(r.exam_code)}`)}
+                        className="w-full text-left px-3 py-2 hover:bg-muted/80 flex flex-wrap items-start justify-between gap-2"
+                        onClick={() => navigate(`/pe/${encodeURIComponent(r.exam_code)}`)}
                       >
-                        <span className="min-w-0">
-                          <span className="font-mono font-medium">{r.exam_code}</span>
-                          <span className="text-muted-foreground"> — {r.name}</span>
-                        </span>
+                        <div className="min-w-0">
+                          <div>
+                            <span className="font-mono font-medium">{r.exam_code}</span>
+                            <span className="text-muted-foreground"> — {r.name}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            <span className="font-mono">{r.company_code}</span>
+                            {coName ? <span> — {coName}</span> : null}
+                          </div>
+                        </div>
                         <span className="flex items-center gap-2 shrink-0">
                           {label && (
                             <Badge variant={label.variant} className="text-[10px] px-1.5 py-0 font-normal">
@@ -194,6 +216,9 @@ export default function PEEncoding() {
           </CardContent>
         </Card>
       </div>
-    </HealthTrendsLayout>
   );
+
+  if (embedded) return body;
+
+  return <HealthTrendsLayout>{body}</HealthTrendsLayout>;
 }

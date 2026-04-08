@@ -8,9 +8,11 @@ interface LayoutProps {
   children: ReactNode;
   title: string;
   role: string;
+  /** Render only main content (used inside APE workspace tabs). */
+  embedded?: boolean;
 }
 
-export function Layout({ children, title, role }: LayoutProps) {
+export function Layout({ children, title, role, embedded }: LayoutProps) {
   const navigate = useNavigate();
   const { signOut, userRoles } = useAuth();
   const showXrayLink = userRoles.includes('encoder') || userRoles.includes('doctor') || userRoles.includes('admin');
@@ -20,6 +22,15 @@ export function Layout({ children, title, role }: LayoutProps) {
     await signOut();
     navigate('/auth');
   };
+
+  if (embedded) {
+    return (
+      <div className="max-w-7xl mx-auto w-full">
+        <h2 className="text-xl font-bold text-foreground mb-6">{title}</h2>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
@@ -42,9 +53,9 @@ export function Layout({ children, title, role }: LayoutProps) {
             <div className="flex items-center gap-3">
               {showHealthTrendsLink && (
                 <Button asChild variant="outline" size="sm">
-                  <Link to="/healthtrends">
+                  <Link to="/?tab=registry">
                     <Stethoscope className="h-4 w-4 mr-2" />
-                    HealthTrends APE
+                    APE workspace
                   </Link>
                 </Button>
               )}

@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { patientSchema, visitSchema } from '@/lib/validation';
 
-export default function Encoder() {
+export default function Encoder({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const { user, loading: authLoading, userRoles } = useAuth();
   const [patients, setPatients] = useState<any[]>([]);
@@ -42,11 +42,9 @@ export default function Encoder() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user || !userRoles.includes('encoder')) {
-        navigate('/');
-      } else {
-        loadData();
-      }
+      if (!user) navigate('/auth');
+      else if (!userRoles.includes('encoder')) navigate('/');
+      else loadData();
     }
   }, [user, authLoading, userRoles, navigate]);
 
@@ -215,27 +213,33 @@ export default function Encoder() {
   };
 
   if (authLoading || loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className={`flex items-center justify-center ${embedded ? 'min-h-[240px]' : 'min-h-screen'}`}>
+        Loading...
+      </div>
+    );
   }
 
   return (
-    <Layout title="Encoder Portal" role="encoder">
-      <Card className="p-4 mb-6 border-primary/20 bg-primary/5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium">HealthTrends Mobile Clinic — APE</p>
-            <p className="text-xs text-muted-foreground">
-              Bulk employee registration and physical exam encoding for annual physicals.
-            </p>
+    <Layout title="Encoder Portal" role="encoder" embedded={embedded}>
+      {!embedded && (
+        <Card className="p-4 mb-6 border-primary/20 bg-primary/5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">HealthTrends Mobile Clinic — APE</p>
+              <p className="text-xs text-muted-foreground">
+                Bulk employee registration and physical exam encoding for annual physicals.
+              </p>
+            </div>
+            <Button asChild size="sm">
+              <Link to="/?tab=registry">
+                <Stethoscope className="h-4 w-4 mr-2" />
+                Open APE workspace
+              </Link>
+            </Button>
           </div>
-          <Button asChild size="sm">
-            <Link to="/healthtrends">
-              <Stethoscope className="h-4 w-4 mr-2" />
-              Open APE workspace
-            </Link>
-          </Button>
-        </div>
-      </Card>
+        </Card>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center">

@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { findingsSchema, diagnosisSchema } from '@/lib/validation';
 import { Link } from 'react-router-dom';
 
-export default function Doctor() {
+export default function Doctor({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const { user, loading: authLoading, userRoles } = useAuth();
   const [patients, setPatients] = useState<any[]>([]);
@@ -32,11 +32,9 @@ export default function Doctor() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user || !userRoles.includes('doctor')) {
-        navigate('/');
-      } else {
-        loadUserDepartment();
-      }
+      if (!user) navigate('/auth');
+      else if (!userRoles.includes('doctor')) navigate('/');
+      else loadUserDepartment();
     }
   }, [user, authLoading, userRoles, navigate]);
 
@@ -221,11 +219,15 @@ export default function Doctor() {
   };
 
   if (authLoading || loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className={`flex items-center justify-center ${embedded ? 'min-h-[240px]' : 'min-h-screen'}`}>
+        Loading...
+      </div>
+    );
   }
 
   return (
-    <Layout title="Doctor Portal" role="doctor">
+    <Layout title="Doctor Portal" role="doctor" embedded={embedded}>
       <div className="space-y-6">
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">

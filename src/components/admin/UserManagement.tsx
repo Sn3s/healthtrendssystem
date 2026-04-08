@@ -260,59 +260,61 @@ export function UserManagement() {
       </div>
 
       <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Roles</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Patient #</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1 flex-wrap">
-                    {user.roles.length > 0 ? (
-                      user.roles.map((role) => (
-                        <Badge key={role} variant="secondary">
-                          {role}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground text-sm">No roles</span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{user.departmentName || 'N/A'}</TableCell>
-                <TableCell>{user.patient_number || 'N/A'}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditDialog(user)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteUser(user.id, user.full_name || user.email)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="max-h-[min(480px,65vh)] overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Roles</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Patient #</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1 flex-wrap">
+                      {user.roles.length > 0 ? (
+                        user.roles.map((role) => (
+                          <Badge key={role} variant="secondary">
+                            {role}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No roles</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{user.departmentName || 'N/A'}</TableCell>
+                  <TableCell>{user.patient_number || 'N/A'}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(user)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id, user.full_name || user.email)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

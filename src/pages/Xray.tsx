@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, FileText, Plus } from 'lucide-react';
 
-export default function Xray() {
+export default function Xray({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: authLoading, userRoles } = useAuth();
@@ -25,11 +25,9 @@ export default function Xray() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user || !canAccess) {
-        navigate('/');
-      } else {
-        loadRecentReports();
-      }
+      if (!user) navigate('/auth');
+      else if (!canAccess) navigate('/');
+      else loadRecentReports();
     }
   }, [user, authLoading, canAccess, navigate]);
 
@@ -70,11 +68,15 @@ export default function Xray() {
   };
 
   if (authLoading) {
-    return <div className="flex justify-center min-h-screen items-center">Loading...</div>;
+    return (
+      <div className={`flex justify-center items-center ${embedded ? 'min-h-[240px]' : 'min-h-screen'}`}>
+        Loading...
+      </div>
+    );
   }
 
   return (
-    <Layout title="X-Ray Reports" role="encoder">
+    <Layout title="X-Ray Reports" role="encoder" embedded={embedded}>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start">
           <div className="flex-1 max-w-md">

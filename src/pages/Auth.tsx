@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Activity, ArrowLeft } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { authSchema } from '@/lib/validation';
@@ -51,7 +51,7 @@ export default function Auth() {
           title: 'Success',
           description: 'Logged in successfully',
         });
-        navigate('/');
+        navigate({ pathname: '/', search: '?tab=registry' });
       } else {
         const { error } = await signUp(formData.email, formData.password, formData.fullName);
         if (error) throw error;
@@ -74,15 +74,6 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="absolute top-4 left-4"
-        onClick={() => navigate(-1)}
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
