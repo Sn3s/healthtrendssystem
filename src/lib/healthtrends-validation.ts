@@ -1,5 +1,24 @@
 import { z } from 'zod';
 
+/** Deterministic placeholder when CSV/import leaves email blank */
+export function placeholderEmployeeEmail(name: string, uniqueKey: string): string {
+  const slug = name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '')
+    .toLowerCase();
+  const localBase = slug.length > 0 ? slug : 'employee';
+  const key = uniqueKey.replace(/[^a-zA-Z0-9._-]/g, '').toLowerCase() || 'x';
+  return `${localBase}.${key}@employees.healthtrends.demo`;
+}
+
+const employeeEmailSchema = z
+  .string()
+  .trim()
+  .max(320)
+  .refine((s) => s === '' || z.string().email().safeParse(s).success, 'Invalid email');
+
 export const apeCompanySchema = z.object({
   company_code: z.string().regex(/^\d{3}$/, 'Company ID must be exactly 3 digits (e.g. 001)'),
   name: z.string().trim().min(1, 'Company name is required').max(200),
@@ -9,6 +28,7 @@ export const apeEmployeeRowSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(200),
   address: z.string().trim().max(500),
   contact_number: z.string().trim().max(50),
+  email: employeeEmailSchema,
   age: z.coerce.number().int().min(0, 'Invalid age').max(150),
   gender: z.enum(['male', 'female', 'other']),
 });

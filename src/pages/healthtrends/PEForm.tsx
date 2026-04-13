@@ -25,8 +25,10 @@ import {
   type PeLabPapSmearFormData,
   type PeLaboratoryFormData,
 } from '@/lib/healthtrends-validation';
-import { Activity, Download } from 'lucide-react';
+import { Download, Mail } from 'lucide-react';
+import { HealthTrendsMark } from '@/components/HealthTrendsMark';
 import { buildPeExamPdfBlob, getPeCombinedPdfReadiness } from '@/lib/peExamPdf';
+import { blobToBase64Pdf, invokeSendPeReport } from '@/lib/emailPeReport';
 
 function formatSavedAt(iso: string): string {
   const d = new Date(iso);
@@ -178,6 +180,7 @@ export default function PEForm() {
     exam_date: string;
     company_code: string;
     company_name: string;
+    email: string;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -185,6 +188,7 @@ export default function PEForm() {
   const [physicalExamSavedAt, setPhysicalExamSavedAt] = useState<string | null>(null);
   const [laboratorySavedAt, setLaboratorySavedAt] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [emailingPdf, setEmailingPdf] = useState(false);
 
   const canAccess = userRoles.includes('encoder') || userRoles.includes('admin');
 
@@ -278,6 +282,7 @@ export default function PEForm() {
         exam_date: emp.exam_date,
         company_code: emp.company_code,
         company_name,
+        email: emp.email ?? '',
       });
 
       const { data: pe } = await supabase.from('pe_records').select('*').eq('ape_employee_id', emp.id).maybeSingle();
@@ -409,6 +414,35 @@ export default function PEForm() {
       toast({ title: 'Error', description: msg, variant: 'destructive' });
     } finally {
       setDownloadingPdf(false);
+    }
+  };
+
+  const handleEmailCombinedPdf = async () => {
+    if (!employee) return;
+    setEmailingPdf(true);
+    try {
+      const { data: pe, error } = await supabase.from('pe_records').select('*').eq('ape_employee_id', employee.id).maybeSingle();
+      if (error) throw error;
+      const ready = getPeCombinedPdfReadiness(pe);
+      if (!ready.ok) {
+        toast({ title: 'Cannot email PDF', description: ready.message, variant: 'destructive' });
+        return;
+      }
+      const blob = await buildPeExamPdfBlob(employee, pe!);
+      const pdfBase64 = await blobToBase64Pdf(blob);
+      const filename = `PE-${employee.exam_code.replace(/[^\w.-]+/g, '_')}.pdf`;
+      const res = await invokeSendPeReport({ examCode: employee.exam_code, pdfBase64, filename });
+      toast({
+        title: 'Report emailed',
+        description: res.sentTo
+          ? `The combined PDF was sent to ${res.sentTo}.`
+          : 'The combined PDF was sent.',
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Something went wrong.';
+      toast({ title: 'Could not send email', description: msg, variant: 'destructive' });
+    } finally {
+      setEmailingPdf(false);
     }
   };
 
@@ -567,7 +601,7 @@ export default function PEForm() {
     <div className="min-h-screen bg-muted/30 flex flex-col">
       <header className="shrink-0 border-b border-border bg-card px-4 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 min-w-0">
-          <Activity className="h-6 w-6 text-primary shrink-0" />
+          <HealthTrendsMark className="h-6 w-6" />
           <span className="text-sm font-medium truncate">APE · Physical examination</span>
         </div>
         <Button variant="outline" size="sm" className="h-8 text-xs shrink-0" asChild>
@@ -591,14 +625,32 @@ export default function PEForm() {
             variant="secondary"
             size="sm"
             className="h-8 text-xs"
-            disabled={downloadingPdf}
+            disabled={downloadingPdf || emailingPdf}
             onClick={handleDownloadCombinedPdf}
           >
             <Download className="h-3.5 w-3.5 mr-1.5 shrink-0" aria-hidden />
             {downloadingPdf ? 'Preparing PDF…' : 'Download PDF report'}
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            disabled={downloadingPdf || emailingPdf}
+            onClick={handleEmailCombinedPdf}
+            title={
+              employee.email?.trim()
+                ? `Send PDF (employee on file: ${employee.email}; test inbox may override on server)`
+                : 'Send PDF (uses employee email on file, or RESEND_TEST_RECIPIENT on server)'
+            }
+          >
+            <Mail className="h-3.5 w-3.5 mr-1.5 shrink-0" aria-hidden />
+            {emailingPdf ? 'Sending…' : 'Email PDF report'}
+          </Button>
           <p className="text-[11px] text-muted-foreground leading-snug max-w-xl">
-            Includes physical examination and laboratory results. Both sections must be saved with entered results.
+            Includes physical examination and laboratory results. Both sections must be saved with entered results. Email is sent via
+            Resend; with <code className="bg-muted px-1 rounded">RESEND_TEST_RECIPIENT</code> set on the server, messages go to that inbox
+            for testing until you add a domain.
           </p>
         </div>
 

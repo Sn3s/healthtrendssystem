@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Activity, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { HealthTrendsMark } from '@/components/HealthTrendsMark';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -86,7 +87,7 @@ export default function ApeWorkspace() {
       <header className="shrink-0 border-b border-border bg-card/95 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
           <div className="flex items-center gap-3 min-w-0">
-            <Activity className="h-8 w-8 text-primary shrink-0" />
+            <HealthTrendsMark className="h-8 w-8" />
             <div className="min-w-0">
               <h1 className="text-lg font-semibold leading-tight truncate">APE workspace</h1>
               <p className="text-xs text-muted-foreground">Mobile clinic · HealthTrends</p>

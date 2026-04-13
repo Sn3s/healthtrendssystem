@@ -1,1 +1,6 @@
 project_id = "girexwuowlezmwyblofx"
+
+# Gateway JWT check can return "Invalid JWT" before our code runs (e.g. proxy / token timing).
+# Auth is enforced inside the function with createClient + auth.getUser() + has_role RPC.
+[functions.send-pe-report]
+verify_jwt = false

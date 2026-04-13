@@ -11,6 +11,7 @@ export type PePdfEmployee = {
   company_code: string;
   /** Display name from `ape_companies`; optional when missing in DB. */
   company_name?: string;
+  email?: string;
 };
 
 const META_KEYS = new Set([
@@ -519,6 +520,8 @@ export async function buildPeExamPdfBlob(employee: PePdfEmployee, pe: PeRecordRo
     ['Exam date', String(employee.exam_date)],
     ['Company code', employee.company_code],
   ];
+  const em = employee.email?.trim();
+  if (em) cardLines.push(['Email', em]);
   const coName = employee.company_name?.trim();
   if (coName) cardLines.push(['Company name', coName]);
   const cardPadV = 14;

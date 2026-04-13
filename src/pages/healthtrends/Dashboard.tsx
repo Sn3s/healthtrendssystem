@@ -10,7 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { apeCompanySchema, apeEmployeeRowSchema, bulkImportSchema } from '@/lib/healthtrends-validation';
+import {
+  apeCompanySchema,
+  apeEmployeeRowSchema,
+  bulkImportSchema,
+  placeholderEmployeeEmail,
+} from '@/lib/healthtrends-validation';
 import type { ApeEmployeeRow } from '@/lib/healthtrends-validation';
 import { Plus, Trash2, Building2, Upload, Users, FileDown } from 'lucide-react';
 import { employeeCsvTemplate, parseEmployeeCsv } from '@/lib/parseEmployeeCsv';
@@ -24,6 +29,7 @@ type RegistryEmployee = {
   name: string;
   address: string;
   contact_number: string;
+  email: string;
   age: number;
   gender: string;
 };
@@ -32,6 +38,7 @@ const emptyRow = (): ApeEmployeeRow => ({
   name: '',
   address: '',
   contact_number: '',
+  email: '',
   age: 0,
   gender: 'male',
 });
@@ -86,16 +93,34 @@ export default function HealthTrendsDashboard({ embedded = false }: { embedded?:
   };
 
   const loadEmployees = async () => {
+    // Use * so this works before the `email` migration is applied (Postgres errors if you SELECT a missing column).
     const { data, error } = await supabase
       .from('ape_employees')
-      .select('id, company_code, employee_number, exam_code, exam_date, name, address, contact_number, age, gender')
+      .select('*')
       .order('company_code', { ascending: true })
       .order('employee_number', { ascending: true });
     if (error) {
       toast({ title: 'Could not load employees', description: error.message, variant: 'destructive' });
       return;
     }
-    setEmployees((data ?? []) as RegistryEmployee[]);
+    setEmployees(
+      (data ?? []).map((e) => {
+        const row = e as RegistryEmployee & { email?: string | null };
+        return {
+          id: row.id,
+          company_code: row.company_code,
+          employee_number: row.employee_number,
+          exam_code: row.exam_code,
+          exam_date: row.exam_date,
+          name: row.name,
+          address: row.address,
+          contact_number: row.contact_number,
+          email: row.email?.trim() ?? '',
+          age: row.age,
+          gender: row.gender,
+        };
+      }),
+    );
   };
 
   const refreshRegistry = async () => {
@@ -235,6 +260,7 @@ export default function HealthTrendsDashboard({ embedded = false }: { embedded?:
           name: row.name.trim(),
           address: row.address.trim(),
           contact_number: row.contact_number.trim(),
+          email: row.email.trim() || placeholderEmployeeEmail(row.name, `${selectedCompany}-${empNum}`),
           age: row.age,
           gender: row.gender,
           created_by: user?.id ?? null,
@@ -313,6 +339,7 @@ export default function HealthTrendsDashboard({ embedded = false }: { embedded?:
                     <TableHead className="text-xs h-9 min-w-[140px]">Name</TableHead>
                     <TableHead className="text-xs h-9 min-w-[160px]">Address</TableHead>
                     <TableHead className="text-xs h-9 whitespace-nowrap">Contact</TableHead>
+                    <TableHead className="text-xs h-9 min-w-[180px]">Email</TableHead>
                     <TableHead className="text-xs h-9 w-12">Age</TableHead>
                     <TableHead className="text-xs h-9 w-20">Gender</TableHead>
                   </TableRow>
@@ -320,13 +347,13 @@ export default function HealthTrendsDashboard({ embedded = false }: { embedded?:
                 <TableBody>
                   {employees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-xs text-muted-foreground py-8 text-center">
+                      <TableCell colSpan={10} className="text-xs text-muted-foreground py-8 text-center">
                         No employees registered yet. Use bulk import below.
                       </TableCell>
                     </TableRow>
                   ) : filteredEmployees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-xs text-muted-foreground py-8 text-center">
+                      <TableCell colSpan={10} className="text-xs text-muted-foreground py-8 text-center">
                         No employees for this company. Change the filter above or register employees for this company.
                       </TableCell>
                     </TableRow>
@@ -359,6 +386,9 @@ export default function HealthTrendsDashboard({ embedded = false }: { embedded?:
                             {e.address || '—'}
                           </TableCell>
                           <TableCell className="text-xs py-1.5 whitespace-nowrap">{e.contact_number || '—'}</TableCell>
+                          <TableCell className="text-xs py-1.5 text-muted-foreground max-w-[200px] truncate" title={e.email}>
+                            {e.email || '—'}
+                          </TableCell>
                           <TableCell className="text-xs py-1.5 tabular-nums">{e.age}</TableCell>
                           <TableCell className="text-xs py-1.5 capitalize">{e.gender}</TableCell>
                         </TableRow>
@@ -494,8 +524,10 @@ export default function HealthTrendsDashboard({ embedded = false }: { embedded?:
             <p className="text-xs text-muted-foreground">
               CSV with header row: <code className="bg-muted px-1 rounded">name</code>,{' '}
               <code className="bg-muted px-1 rounded">address</code>, <code className="bg-muted px-1 rounded">contact_number</code>,{' '}
-              <code className="bg-muted px-1 rounded">age</code>, <code className="bg-muted px-1 rounded">gender</code>. Or five columns
-              in that order without a header. Gender: male, female, other (or m/f/o).
+              <code className="bg-muted px-1 rounded">email</code>, <code className="bg-muted px-1 rounded">age</code>,{' '}
+              <code className="bg-muted px-1 rounded">gender</code>. Or six columns in that order without a header (legacy five-column
+              files without <code className="bg-muted px-1 rounded">email</code> still work; a placeholder is filled on save). Gender:
+              male, female, other (or m/f/o).
             </p>
 
             <div className="max-h-[min(360px,50vh)] overflow-auto rounded-md border">
@@ -506,6 +538,7 @@ export default function HealthTrendsDashboard({ embedded = false }: { embedded?:
                     <TableHead className="text-xs h-8 py-1 min-w-[140px]">Name</TableHead>
                     <TableHead className="text-xs h-8 py-1 min-w-[160px]">Address</TableHead>
                     <TableHead className="text-xs h-8 py-1 min-w-[100px]">Contact</TableHead>
+                    <TableHead className="text-xs h-8 py-1 min-w-[160px]">Email</TableHead>
                     <TableHead className="text-xs h-8 py-1 w-16">Age</TableHead>
                     <TableHead className="text-xs h-8 py-1 w-28">Gender</TableHead>
                     <TableHead className="w-10" />
@@ -537,6 +570,15 @@ export default function HealthTrendsDashboard({ embedded = false }: { embedded?:
                           value={row.contact_number}
                           onChange={(e) => updateRow(i, { contact_number: e.target.value })}
                           placeholder="Phone"
+                        />
+                      </TableCell>
+                      <TableCell className="py-1 px-1">
+                        <Input
+                          className="h-7 text-xs"
+                          type="email"
+                          value={row.email}
+                          onChange={(e) => updateRow(i, { email: e.target.value })}
+                          placeholder="name@example.com"
                         />
                       </TableCell>
                       <TableCell className="py-1 px-1">

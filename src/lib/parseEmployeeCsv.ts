@@ -72,6 +72,9 @@ const HEADER_ALIASES: Record<string, keyof ApeEmployeeRow> = {
   mobile: 'contact_number',
   contact_number: 'contact_number',
   'contact number': 'contact_number',
+  email: 'email',
+  'e-mail': 'email',
+  'email address': 'email',
   age: 'age',
   gender: 'gender',
   sex: 'gender',
@@ -101,15 +104,34 @@ function normalizeGender(raw: string): ApeEmployeeRow['gender'] {
 
 function rowFromPositions(cells: string[]): ApeEmployeeRow {
   if (cells.length < 5) {
-    throw new Error(`Expected at least 5 columns (name, address, contact, age, gender); got ${cells.length}`);
+    throw new Error(
+      `Expected 5 columns (name, address, contact, age, gender) or 6 with email after contact; got ${cells.length}`,
+    );
   }
-  const [name, address = '', contact_number = '', ageRaw, genderRaw] = cells;
+  if (cells.length > 6) {
+    throw new Error(
+      `Expected 5 or 6 columns without a header row; got ${cells.length}. Use a header row or fix extra fields.`,
+    );
+  }
+  let name: string;
+  let address: string;
+  let contact_number: string;
+  let email: string;
+  let ageRaw: string;
+  let genderRaw: string;
+  if (cells.length === 6) {
+    [name, address = '', contact_number = '', email = '', ageRaw, genderRaw] = cells;
+  } else {
+    [name, address = '', contact_number = '', ageRaw, genderRaw] = cells;
+    email = '';
+  }
   const age = parseInt(String(ageRaw).replace(/\s/g, ''), 10);
   if (Number.isNaN(age)) throw new Error(`Invalid age "${ageRaw}"`);
   return {
     name,
     address,
     contact_number,
+    email,
     age,
     gender: normalizeGender(genderRaw ?? ''),
   };
@@ -119,7 +141,7 @@ function rowFromMap(cells: string[], colMap: Map<keyof ApeEmployeeRow, number>):
   const get = (k: keyof ApeEmployeeRow) => {
     const idx = colMap.get(k);
     if (idx === undefined) {
-      if (k === 'address' || k === 'contact_number') return '';
+      if (k === 'address' || k === 'contact_number' || k === 'email') return '';
       throw new Error(`Missing column: ${k}`);
     }
     return cells[idx] ?? '';
@@ -127,6 +149,7 @@ function rowFromMap(cells: string[], colMap: Map<keyof ApeEmployeeRow, number>):
   const name = get('name');
   const address = get('address');
   const contact_number = get('contact_number');
+  const email = get('email');
   const ageRaw = get('age');
   const genderRaw = get('gender');
   const age = parseInt(String(ageRaw).replace(/\s/g, ''), 10);
@@ -135,6 +158,7 @@ function rowFromMap(cells: string[], colMap: Map<keyof ApeEmployeeRow, number>):
     name,
     address,
     contact_number,
+    email,
     age,
     gender: normalizeGender(genderRaw),
   };
@@ -147,7 +171,8 @@ export type ParseEmployeeCsvResult = {
 
 /**
  * Parse employee rows from CSV. First row is treated as headers if it maps to known columns;
- * otherwise rows are read in order: name, address, contact, age, gender.
+ * otherwise rows are read in order: name, address, contact_number, email, age, gender (six columns),
+ * or the legacy five columns without email (email becomes empty).
  */
 export function parseEmployeeCsv(text: string): ParseEmployeeCsvResult {
   const matrix = parseCsv(text);
@@ -185,8 +210,8 @@ export function parseEmployeeCsv(text: string): ParseEmployeeCsvResult {
 
 export function employeeCsvTemplate(): string {
   return [
-    'name,address,contact_number,age,gender',
-    'Maria Santos,"123 Rizal Ave., Manila",09171234567,32,female',
-    'Juan Cruz,456 Quezon Blvd,09281234567,41,male',
+    'name,address,contact_number,email,age,gender',
+    'Maria Santos,"123 Rizal Ave., Manila",09171234567,maria.santos.001@employees.healthtrends.demo,32,female',
+    'Juan Cruz,456 Quezon Blvd,09281234567,juan.cruz.002@employees.healthtrends.demo,41,male',
   ].join('\r\n');
 }

@@ -1,7 +1,8 @@
 import { ReactNode } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from './ui/button';
-import { LogOut, Activity, FileText, ArrowLeft, Stethoscope } from 'lucide-react';
+import { LogOut, FileText, ArrowLeft, Stethoscope } from 'lucide-react';
+import { HealthTrendsMark } from '@/components/HealthTrendsMark';
 import { useAuth } from '@/hooks/useAuth';
 
 interface LayoutProps {
@@ -44,7 +45,7 @@ export function Layout({ children, title, role, embedded }: LayoutProps) {
                   Back
                 </Link>
               </Button>
-              <Activity className="h-8 w-8 text-primary" />
+              <HealthTrendsMark className="h-8 w-8" />
               <div>
                 <h1 className="text-2xl font-bold text-foreground">HealthStream</h1>
                 <p className="text-sm text-muted-foreground capitalize">{role} Portal</p>

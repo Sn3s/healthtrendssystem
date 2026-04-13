@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL =
+export const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL ?? 'https://girexwuowlezmwyblofx.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY =
+export const SUPABASE_PUBLISHABLE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpcmV4d3Vvd2xlem13eWJsb2Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwNzE2OTEsImV4cCI6MjA4NDY0NzY5MX0.iN0O4qAakaZvNXeSKOc2GcqRZBjxqO19mKBH_r5tAkI';
 

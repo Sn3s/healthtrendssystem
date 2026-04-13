@@ -2,7 +2,8 @@ import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Activity, ArrowLeft, LayoutDashboard, Stethoscope, LogOut } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, Stethoscope, LogOut } from 'lucide-react';
+import { HealthTrendsMark } from '@/components/HealthTrendsMark';
 import { useAuth } from '@/hooks/useAuth';
 
 const nav = [
@@ -20,7 +21,7 @@ export function HealthTrendsLayout({ children }: { children: ReactNode }) {
       <aside className="w-56 shrink-0 border-r border-border bg-card flex flex-col">
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <Activity className="h-7 w-7 text-primary" />
+            <HealthTrendsMark className="h-7 w-7" />
             <div>
               <p className="font-semibold text-sm leading-tight">HealthTrends</p>
               <p className="text-xs text-muted-foreground">Mobile Clinic APE</p>
